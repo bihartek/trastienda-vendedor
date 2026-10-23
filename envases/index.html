@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Envases: kg por material desde tus pedidos</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}code,pre{background:#f3f3f3;padding:.1rem .3rem}</style></head><body><h1>Envases: kg por material desde tus pedidos</h1><p>Carga tus CSV de pedidos (Amazon, Shopify, TikTok Shop) y tu maestro de SKU. Todo se calcula en tu navegador: los ficheros no salen de tu equipo.</p><p>Diagnóstico en 6 preguntas: ¿vendes envasado? ¿en España? ¿superas los umbrales de tu SCRAP? ¿tienes pesos por SKU? ¿mezclas canales? ¿conoces tu plazo?</p><p><a href="https://github.com/bihartek/trastienda-vendedor/releases/download/temporada-2027/maestro-sku__envases.csv">Descargar plantilla de maestro de SKU</a></p><p>Pedidos <input type="file" id="pedidos" multiple> · Maestro <input type="file" id="maestro"> · Año <input id="anio" value="2026" size="4"> <button id="calcular">Calcular</button></p><pre id="salida">—</pre><p>Cifras orientativas; Comprueba la prórroga del año y el plazo de tu SCRAP. Un SKU sin peso en el maestro queda como pendiente, nunca con un peso inventado.</p><p><a href="../">Inicio</a> · Sin cookies, sin formularios, sin servidor.</p><script src="engine.js"></script><script>
+var TARIFAS = {
+  "formula": "neto = bruto/(1+iva) - tasa*bruto - fijo_pedido - coste_unitario*unidades",
+  "iva": 0.21,
+  "canales": {
+    "amazon": {"tasa": 0.15, "fijo_pedido": 0.0, "fuente": "referral fee por defecto de Amazon.es (categoria generica); revisar tu categoria", "verificado": false},
+    "shopify": {"tasa": 0.02, "fijo_pedido": 0.25, "fuente": "supuesto: pasarela de pago tipica (% + fijo); revisar tu contrato", "verificado": false},
+    "tiktok": {"tasa": 0.09, "fijo_pedido": 0.0, "fuente": "comision TikTok Shop ES desde 8-ene-2026 (newsroom TikTok / marketing4ecommerce, ver progress/current.md FEAT-001)", "verificado": false}
+  }
+};
+var archivos = [], maestro = null;
+function leer(f){return new Promise(function(ok,ko){var r=new FileReader();r.onload=function(){ok({nombre:f.name,texto:r.result})};r.onerror=ko;r.readAsText(f)})}
+document.getElementById('pedidos').addEventListener('change',function(e){Promise.all(Array.from(e.target.files).map(leer)).then(function(a){archivos=a})});
+document.getElementById('maestro').addEventListener('change',function(e){leer(e.target.files[0]).then(function(a){maestro=a.texto})});
+document.getElementById('calcular').addEventListener('click',function(){var o=document.getElementById('salida');try{var r=Trastienda.calcular(archivos,maestro,TARIFAS,{anio:Number(document.getElementById('anio').value)});var t='';Object.keys(r.envases.gramos).sort().forEach(function(c){Trastienda.MATERIALES.forEach(function(m){t+=c+' '+m+': '+(r.envases.gramos[c][m]/1000).toFixed(3)+' kg\n'})});var sp=Trastienda.skusPendientes(r.envases.pendientes);if(sp.length){t+='\nincompleto: '+sp.length+' SKUs sin datos de envase: '+sp.join(', ')+'\n'}o.textContent=t}catch(e){o.textContent='Error: '+e.message}});
+</script></body></html>
